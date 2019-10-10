@@ -11,7 +11,7 @@ def evaluate(model,
         for batch in iterator:
             predictions = model(batch.input).squeeze(1)
 
-            loss = criterion(predictions, batch.output.type(torch.LongTensor))
+            loss = criterion(predictions, batch.output)
 
             epoch_loss += loss.item()
 
