@@ -4,16 +4,17 @@
 
 
 def train_model(model,
-                dataset,
-                func_loss,
-                optimizer,
-                epochs):
+                dataset_iterator,
+                criterion,
+                optimizer):
     model.train()
-    for epoch in epochs:
-        for x, y in dataset:
-            output = model(x)
+    for batch in dataset_iterator:
+        predictions = model(batch.input).squeeze(1)
 
-            loss = func_loss(output, y)
-            loss.backward()
+        loss = criterion(predictions, batch.output)
+        loss.backward()
 
-            optimizer.step()
+        optimizer.step()
+        optimizer.zero_grad()
+
+
