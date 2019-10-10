@@ -13,12 +13,11 @@ from source.model.eval_model import evaluate
 
 
 def split_dataset(data_path):
-    dataset = pd.read_csv(data_path, nrows=1000)
+    dataset = pd.read_csv(data_path)
 
     X = [data_ for data_ in dataset['query_string']]
-    Y = [data_.split('/')[0] for data_ in dataset['output']]
 
-    train_X, test_X, train_Y, test_Y = train_test_split(X, Y, test_size=0.3, random_state=42)
+    train_X, test_X, train_Y, test_Y = train_test_split(X, X, test_size=0.3, random_state=42)
 
     test_X, val_X, test_Y, val_Y = train_test_split(test_X, test_Y, test_size=0.45, random_state=42)
 
@@ -37,7 +36,7 @@ def split_dataset(data_path):
 
 def get_data(path):
     TEXT = data.Field()
-    LABEL = data.LabelField(dtype=torch.long)
+    LABEL = data.Field(dtype=torch.float)
 
     device = torch.device('cpu')
 
@@ -53,6 +52,9 @@ def get_data(path):
         skip_header=True
     )
 
+    TEXT.build_vocab(train_data)
+    LABEL.build_vocab(train_data)
+
     train_iterator, val_iterator, test_iterator = data.BucketIterator.splits(
         (train_data, val_data, test_data),
         batch_size=256,
@@ -60,7 +62,7 @@ def get_data(path):
         sort_key=lambda x: len(x.input),
         sort_within_batch=False)
 
-    return train_iterator, val_iterator, test_iterator
+    return train_iterator, val_iterator, test_iterator, len(TEXT.vocab)
 
 
 def run_main(data_path,
@@ -69,21 +71,25 @@ def run_main(data_path,
     split_dataset(data_path)
 
     print("Tokenizing data")
-    train_iterator, test_iterator, val_iterator = get_data(path='../data')
+    train_iterator, test_iterator, val_iterator, input_dim = get_data(path='../data')
 
     print("Creating AutoEncoder")
-    model = AutoEncoder(input_dim=42,
+    model = AutoEncoder(input_dim=input_dim,
                         embedding_dim=15,
-                        decoder_input=1)
+                        encoder_output=12)
 
-    optimizer = optim.Adam(model.parameters())
+    optimizer = optim.Adam(model.parameters(),
+                           lr=0.00001)
+
     criterion = nn.MSELoss()
 
     print("Initializing training and validation")
     best_valid_loss = float('inf')
     for epoch in range(epochs):
+        print("\tTraining")
         train_loss = train_model(model, train_iterator, optimizer, criterion)
 
+        print("\tValidation")
         valid_loss = evaluate(model, val_iterator, criterion)
 
         if valid_loss < best_valid_loss:
@@ -97,4 +103,4 @@ def run_main(data_path,
 
 if __name__ == '__main__':
     run_main(data_path='../data/tabular_data.csv',
-             epochs=5)
+             epochs=50)
