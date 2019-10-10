@@ -1,3 +1,6 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -9,15 +12,39 @@ from source.model.train_model import train_model
 from source.model.eval_model import evaluate
 
 
-def get_data(data_path):
+def split_dataset(data_path):
+    dataset = pd.read_csv(data_path, nrows=1000)
+
+    X = [data_ for data_ in dataset['query_string']]
+    Y = [data_.split('/')[0] for data_ in dataset['output']]
+
+    train_X, test_X, train_Y, test_Y = train_test_split(X, Y, test_size=0.3, random_state=42)
+
+    test_X, val_X, test_Y, val_Y = train_test_split(test_X, test_Y, test_size=0.45, random_state=42)
+
+    train = pd.concat([pd.Series(train_X), pd.Series(train_Y)], axis=1)
+    test = pd.concat([pd.Series(test_X), pd.Series(test_Y)], axis=1)
+    val = pd.concat([pd.Series(val_X), pd.Series(val_Y)], axis=1)
+
+    train = train.rename(columns={0: 'input', 1: 'output'})
+    test = test.rename(columns={0: 'input', 1: 'output'})
+    val = val.rename(columns={0: 'input', 1: 'output'})
+
+    train.to_csv("../data/train.csv", index=False)
+    test.to_csv("../data/test.csv", index=False)
+    val.to_csv("../data/val.csv", index=False)
+
+
+def get_data(path):
     TEXT = data.Field()
     LABEL = data.LabelField(dtype=torch.long)
+
     device = torch.device('cpu')
 
     fields = [('input', TEXT), ('output', LABEL)]
 
     train_data, val_data, test_data = data.TabularDataset.splits(
-        path='',
+        path=path,
         train='train.csv',
         validation='val.csv',
         test='test.csv',
@@ -38,8 +65,13 @@ def get_data(data_path):
 
 def run_main(data_path,
              epochs):
-    train_iterator, test_iterator, val_iterator = get_data(data_path)
+    print("Splitting initial dataset")
+    split_dataset(data_path)
 
+    print("Tokenizing data")
+    train_iterator, test_iterator, val_iterator = get_data(path='../data')
+
+    print("Creating AutoEncoder")
     model = AutoEncoder(input_dim=42,
                         embedding_dim=15,
                         decoder_input=1)
@@ -47,6 +79,7 @@ def run_main(data_path,
     optimizer = optim.Adam(model.parameters())
     criterion = nn.MSELoss()
 
+    print("Initializing training and validation")
     best_valid_loss = float('inf')
     for epoch in range(epochs):
         train_loss = train_model(model, train_iterator, optimizer, criterion)
