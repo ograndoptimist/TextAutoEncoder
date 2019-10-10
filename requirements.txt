@@ -1,3 +1,5 @@
 -e
 torch
 torchtext
+sklearn
+pandas
