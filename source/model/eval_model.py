@@ -9,7 +9,8 @@ def evaluate(model,
     model.eval()
     with torch.no_grad():
         for batch in iterator:
-            predictions = model(batch.input).squeeze(1)
+            predictions = model(batch.input)
+            predictions = torch.mean(predictions, -1)
 
             loss = criterion(predictions, batch.output)
 
