@@ -6,10 +6,14 @@ import torch.nn.functional as F
 
 
 class Encoder(nn.Module):
-    def __init__(self, input_dim):
+    def __init__(self,
+                 encoder_input,
+                 encoder_output):
         super().__init__()
-        self.dense_1 = nn.Linear(in_features=input_dim, out_features=24)
-        self.dense_2 = nn.Linear(in_features=24, out_features=12)
+        self.dense_1 = nn.Linear(in_features=encoder_input,
+                                 out_features=24)
+        self.dense_2 = nn.Linear(in_features=24,
+                                 out_features=encoder_output)
 
     def forward(self, x):
         net = F.relu(self.dense_1(x))
