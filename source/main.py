@@ -45,7 +45,7 @@ def run_main(data_path,
                         decoder_input=1)
 
     optimizer = optim.Adam(model.parameters())
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.MSELoss()
 
     best_valid_loss = float('inf')
     for epoch in range(epochs):
