@@ -6,16 +6,11 @@ import torch.nn as nn
 
 class Embedding(nn.Module):
     def __init__(self,
-                 num_embeddings,
+                 input_dim,
                  embedding_dim):
         super().__init__()
-        self.embedding = nn.Embedding(num_embeddings=num_embeddings,
+        self.embedding = nn.Embedding(num_embeddings=input_dim,
                                       embedding_dim=embedding_dim)
-
-        self.init_weights()
-
-    def init_weights(self):
-        pass
 
     def forward(self, x):
         net = self.embedding(x)
