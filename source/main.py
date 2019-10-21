@@ -8,12 +8,15 @@ import torch.optim as optim
 from torchtext import data
 
 from source.model.autoencoder import AutoEncoder
+from source.model.encoder import Encoder
+from source.model.decoder import Decoder
+
 from source.model.train_model import train_model
 from source.model.eval_model import evaluate
 
 
 def split_dataset(data_path):
-    dataset = pd.read_csv(data_path)
+    dataset = pd.read_csv(data_path, nrows=100000)
 
     X = [data_ for data_ in dataset['query_string']]
 
@@ -73,13 +76,20 @@ def run_main(data_path,
     print("Tokenizing data")
     train_iterator, test_iterator, val_iterator, input_dim = get_data(path='../data')
 
-    print("Creating AutoEncoder")
-    model = AutoEncoder(input_dim=input_dim,
-                        embedding_dim=15,
-                        encoder_output=12)
+    embedding_dim = 42
+    input_dim = 15
+    encoder_output = 12
 
-    optimizer = optim.Adam(model.parameters(),
-                           lr=0.00001)
+    embedding = nn.Embedding(num_embeddings=input_dim, embedding_dim=embedding_dim)
+    encoder = Encoder(encoder_input=embedding_dim, encoder_output=encoder_output)
+    decoder = Decoder(decoder_input=encoder_output, decoder_output=input_dim)
+
+    print("Creating AutoEncoder")
+    model = AutoEncoder(embedding=embedding,
+                        encoder=encoder,
+                        decoder=decoder)
+
+    optimizer = optim.Adam(model.parameters(), lr=0.00001)
 
     criterion = nn.MSELoss()
 
